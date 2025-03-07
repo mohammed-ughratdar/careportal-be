@@ -1,0 +1,32 @@
+services:
+  db:
+    image: postgres:latest
+    container_name: care-mates-db
+    restart: always
+    environment:
+      POSTGRES_USER: ""
+      POSTGRES_PASSWORD: 
+      POSTGRES_DB: careportal
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  backend:
+    build: ./careportal-be
+    container_name: care-mates-api
+    restart: always
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+    env_file:
+      - ./careportal-be/.env
+    environment:
+      DB_CONNECTION_URL: postgresql+asyncpg://user:pw@db:5432/careportal
+    entrypoint: >
+      sh -c "poetry run alembic upgrade head && exec poetry run uvicorn main:app --host 0.0.0.0 --port 8000 --reload"
+
+volumes:
+  postgres_data:
